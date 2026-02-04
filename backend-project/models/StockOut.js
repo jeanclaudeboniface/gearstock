@@ -11,7 +11,6 @@ const stockOutSchema = new mongoose.Schema({
 
 stockOutSchema.index({ tenantId: 1, stock_out_date: -1 });
 
-// Map _id to id
 stockOutSchema.set('toJSON', {
   virtuals: true,
   versionKey: false,

@@ -54,7 +54,7 @@ export default function InventoryMovement() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      // Adjusted quantity: positive for IN, negative for OUT, as-is for ADJUST
+      
       let finalQty = parseInt(form.quantity);
       if (form.type === 'OUT') finalQty = -Math.abs(finalQty);
       

@@ -28,8 +28,7 @@ const logAudit = async ({
     });
   } catch (error) {
     console.error('Audit log error:', error);
-    // We don't want to crash the main request if audit logging fails,
-    // but in a real production system, you might want more robust handling.
+
   }
 };
 

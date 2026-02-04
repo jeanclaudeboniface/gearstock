@@ -8,7 +8,6 @@ const userSchema = new mongoose.Schema({
   resetPasswordExpires: { type: Date }
 });
 
-// Map _id to id
 userSchema.set('toJSON', {
   virtuals: true,
   versionKey: false,

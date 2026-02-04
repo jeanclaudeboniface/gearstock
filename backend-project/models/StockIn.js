@@ -9,7 +9,6 @@ const stockInSchema = new mongoose.Schema({
 
 stockInSchema.index({ tenantId: 1, stock_in_date: -1 });
 
-// Map _id to id
 stockInSchema.set('toJSON', {
   virtuals: true,
   versionKey: false,

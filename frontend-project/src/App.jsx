@@ -61,7 +61,6 @@ function App() {
     if (memberships.length > 0) {
       localStorage.setItem("memberships", JSON.stringify(memberships));
 
-      // Auto-select if only one garage, otherwise go to selector if no activeTenantId
       if (memberships.length === 1) {
         setActiveTenantId(memberships[0].tenantId);
       } else if (!activeTenantId) {
@@ -91,13 +90,12 @@ function App() {
   };
 
   const logout = () => {
-    // Clear localStorage first to ensure clean state on refresh
+    
     localStorage.removeItem("token");
     localStorage.removeItem("user");
     localStorage.removeItem("memberships");
     localStorage.removeItem("activeTenantId");
 
-    // Then clear React state
     setToken("");
     setUser(null);
     setMemberships([]);
@@ -119,7 +117,6 @@ function App() {
     return config;
   });
 
-  // Handle Forbidden (No membership or wrong role)
   authAxios.interceptors.response.use(
     (response) => response,
     (error) => {

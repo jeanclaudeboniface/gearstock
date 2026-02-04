@@ -28,7 +28,7 @@ export default function LandingHowItWorks() {
         </div>
         
         <div className="relative">
-          {/* Connector Line */}
+          {}
           <div className="hidden lg:block absolute top-12 left-0 w-full h-0.5 bg-slate-100 -z-10" />
           
           <div className="grid lg:grid-cols-3 gap-12">

@@ -3,9 +3,7 @@ const InventoryService = require('./inventoryService');
 const mongoose = require('mongoose');
 
 class WorkOrderService {
-  /**
-   * Create a new work order
-   */
+  
   static async createWorkOrder(tenantId, userId, data) {
     const lastOrder = await WorkOrder.findOne({ tenantId }).sort({ createdAt: -1 });
     const nextNumber = lastOrder ? parseInt(lastOrder.orderNumber.split('-')[1]) + 1 : 1001;
@@ -21,9 +19,6 @@ class WorkOrderService {
     return await workOrder.save();
   }
 
-  /**
-   * Update work order status and handle inventory consumption
-   */
   static async updateStatus(tenantId, userId, workOrderId, newStatus) {
     const session = await mongoose.startSession();
     session.startTransaction();
@@ -32,12 +27,10 @@ class WorkOrderService {
       const wo = await WorkOrder.findOne({ _id: workOrderId, tenantId }).session(session);
       if (!wo) throw new Error('Work order not found');
 
-      // Logic: Transitioning to IN_PROGRESS or COMPLETED
       if (newStatus === 'IN_PROGRESS' && wo.status === 'PENDING') {
         wo.startedAt = new Date();
       }
 
-      // If completing, we consume inventory if not already done
       if (newStatus === 'COMPLETED' && wo.status !== 'COMPLETED') {
         for (let partItem of wo.parts) {
           if (!partItem.stockMovementId) {

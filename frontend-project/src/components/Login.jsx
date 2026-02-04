@@ -22,7 +22,7 @@ export default function Login() {
     try {
       const response = await axios.post(`${API_BASE_URL}/login`, formData);
       setToken(response.data.token);
-      // Actual navigation logic will be in App.jsx based on memberships count
+      
     } catch (err) {
       if (err.response && err.response.data && err.response.data.message) {
         setError(err.response.data.message);

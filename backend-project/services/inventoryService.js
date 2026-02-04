@@ -2,14 +2,8 @@ const mongoose = require('mongoose');
 const StockMovement = require('../models/StockMovement');
 const SparePart = require('../models/SparePart');
 
-/**
- * Service to handle all inventory logic.
- * Ensures data integrity and tenant isolation.
- */
 class InventoryService {
-  /**
-   * Calculate current stock for a part
-   */
+  
   static async getPartBalance(tenantId, sparePartId) {
     const result = await StockMovement.aggregate([
       { $match: { 
@@ -21,14 +15,11 @@ class InventoryService {
     return result.length > 0 ? result[0].balance : 0;
   }
 
-  /**
-   * Perform a stock movement
-   */
   static async recordMovement({
     tenantId,
     sparePartId,
     type,
-    quantity, // Positive for IN/ADJUST+, Negative for OUT/ADJUST-
+    quantity, 
     reason,
     performedByUserId,
     unitCost = 0,
@@ -40,17 +31,15 @@ class InventoryService {
     session.startTransaction();
 
     try {
-      // 1. Validate Part exists and belongs to tenant
+      
       const part = await SparePart.findOne({ _id: sparePartId, tenantId }).session(session);
       if (!part) throw new Error('Spare part not found or access denied');
 
-      // 2. If OUT, check availability
       const currentBalance = await this.getPartBalance(tenantId, sparePartId);
       if (type === 'OUT' && Math.abs(quantity) > currentBalance) {
         throw new Error(`Insufficient stock. Available: ${currentBalance}, Requested: ${Math.abs(quantity)}`);
       }
 
-      // 3. Record Movement
       const movement = await StockMovement.create([{
         tenantId,
         sparePartId,
@@ -75,9 +64,6 @@ class InventoryService {
     }
   }
 
-  /**
-   * Get Inventory Status Report
-   */
   static async getInventoryStatus(tenantId) {
     return await SparePart.aggregate([
       { $match: { tenantId: new mongoose.Types.ObjectId(tenantId), status: 'ACTIVE' } },

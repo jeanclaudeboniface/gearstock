@@ -35,7 +35,6 @@ export default function Sidebar({ logout, closeSidebar }) {
     },
   ];
 
-  // Only show Team to Owners and Managers
   if (userRole === "OWNER" || userRole === "MANAGER") {
     navLinks.push({
       name: "Team Settings",

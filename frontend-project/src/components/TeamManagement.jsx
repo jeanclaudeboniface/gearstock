@@ -14,7 +14,7 @@ export default function TeamManagement() {
   const [isInviteDetailsModalOpen, setIsInviteDetailsModalOpen] =
     useState(false);
   const [selectedInvite, setSelectedInvite] = useState(null);
-  const [inviteFilter, setInviteFilter] = useState("pending"); // pending, all, used
+  const [inviteFilter, setInviteFilter] = useState("pending");
   const [lastInviteLink, setLastInviteLink] = useState("");
   const [lastInviteEmail, setLastInviteEmail] = useState("");
   const [linkCopied, setLinkCopied] = useState(false);
@@ -41,7 +41,6 @@ export default function TeamManagement() {
         );
         membersData = membersRes.data;
       } catch (err) {
-        console.error("Members fetch error:", err);
         showToast(
           err.response?.data?.message || "Error fetching team members",
           "error",
@@ -62,11 +61,6 @@ export default function TeamManagement() {
         );
         invitesData = invitesRes.data;
       } catch (err) {
-        console.error("[Invites Fetch Error]", {
-          status: err.response?.status,
-          message: err.response?.data?.message,
-          data: err.response?.data,
-        });
         showToast(
           err.response?.data?.message || `Fetch Failed: ${err.message}`,
           "error",
@@ -98,7 +92,6 @@ export default function TeamManagement() {
         inviteForm,
       );
 
-      // Show the invite link modal so admin can copy/share the link
       if (res.data.invite?.inviteLink) {
         setLastInviteLink(res.data.invite.inviteLink);
         setLastInviteEmail(inviteForm.email);
@@ -147,7 +140,6 @@ export default function TeamManagement() {
         `/tenants/${activeTenantId}/invites/${inviteId}/resend`,
       );
 
-      // Show the invite link modal so admin can copy the new link
       if (res.data.inviteLink) {
         setLastInviteLink(res.data.inviteLink);
         setLastInviteEmail(email);
@@ -388,7 +380,7 @@ export default function TeamManagement() {
         </section>
       ) : (
         <section className="animate-in fade-in slide-in-from-bottom-2 duration-300 space-y-4">
-          {/* Invite Filter Tabs */}
+          {}
           <div className="flex gap-2">
             <button
               onClick={() => setInviteFilter("pending")}
@@ -629,7 +621,7 @@ export default function TeamManagement() {
         />
       )}
 
-      {/* Invite Link Modal - Shows after creating invite */}
+      {}
       <Modal
         isOpen={isInviteLinkModalOpen}
         onClose={() => setIsInviteLinkModalOpen(false)}
@@ -688,7 +680,7 @@ export default function TeamManagement() {
         </div>
       </Modal>
 
-      {/* Invite Details Modal */}
+      {}
       <Modal
         isOpen={isInviteDetailsModalOpen}
         onClose={() => {
@@ -699,7 +691,7 @@ export default function TeamManagement() {
       >
         {selectedInvite && (
           <div className="space-y-6">
-            {/* Status Banner */}
+            {}
             <div
               className={`rounded-xl p-4 border ${
                 selectedInvite.status === "USED"
@@ -775,7 +767,7 @@ export default function TeamManagement() {
               </div>
             </div>
 
-            {/* Details Grid */}
+            {}
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-1">
                 <label className="text-xs font-bold text-slate-400 uppercase">
@@ -811,7 +803,7 @@ export default function TeamManagement() {
               </div>
             </div>
 
-            {/* Security Info */}
+            {}
             <div className="bg-slate-50 rounded-xl p-4 border border-slate-100">
               <h4 className="text-xs font-bold text-slate-500 uppercase mb-3">
                 Security Details
@@ -832,7 +824,7 @@ export default function TeamManagement() {
               </div>
             </div>
 
-            {/* Actions */}
+            {}
             <div className="pt-4 border-t border-slate-100 flex justify-between">
               <button
                 type="button"

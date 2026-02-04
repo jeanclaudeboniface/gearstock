@@ -1,7 +1,6 @@
 const mongoose = require('mongoose');
 const Membership = require('../models/Membership');
 
-// Extracts tenant ID from headers and validates its format
 const tenantContextMiddleware = (req, res, next) => {
   const tenantId = req.headers['x-tenant-id'] || req.params.tenantId;
   
@@ -19,7 +18,6 @@ const tenantContextMiddleware = (req, res, next) => {
   next();
 };
 
-// Verifies that the user has an active membership in the current tenant
 const membershipMiddleware = async (req, res, next) => {
   try {
     const membership = await Membership.findOne({
@@ -39,7 +37,6 @@ const membershipMiddleware = async (req, res, next) => {
   }
 };
 
-// Enforces role-based access control
 const requireRole = (allowedRoles) => {
   return (req, res, next) => {
     if (!req.membership) {

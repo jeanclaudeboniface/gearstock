@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom';
 export default function LandingFinalCTA() {
   return (
     <section className="py-24 bg-blue-600 relative overflow-hidden font-inter">
-      {/* Decorative background elements */}
+      {}
       <div className="absolute top-0 right-0 -mt-24 -mr-24 w-96 h-96 bg-blue-500 rounded-full opacity-50 blur-3xl" />
       <div className="absolute bottom-0 left-0 -mb-24 -ml-24 w-96 h-96 bg-blue-700 rounded-full opacity-50 blur-3xl" />
 

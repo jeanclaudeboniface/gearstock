@@ -5,14 +5,13 @@ import { API_BASE_URL } from "../config";
 import { AuthContext } from "../App";
 import AuthLayout from "./AuthLayout";
 
-// OTP Input Component
 function OtpInput({ value, onChange, disabled }) {
   const inputRefs = useRef([]);
 
   const handleChange = (index, e) => {
     const val = e.target.value.replace(/\D/g, "");
     if (val.length > 1) {
-      // Handle paste
+      
       const newValue = val.slice(0, 6).split("");
       const currentValue = value.split("");
       newValue.forEach((digit, i) => {
@@ -59,7 +58,6 @@ function OtpInput({ value, onChange, disabled }) {
   );
 }
 
-// Countdown Timer Component
 function CountdownTimer({ expiresAt, onExpire }) {
   const [timeLeft, setTimeLeft] = useState("");
 
@@ -99,21 +97,17 @@ export default function InviteAccept() {
   const { setToken, setActiveTenantId } = useContext(AuthContext);
   const navigate = useNavigate();
 
-  // UI State
-  const [step, setStep] = useState("loading"); // loading, preview, otp, account, success, error
+  const [step, setStep] = useState("loading"); 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  // Invite Data
   const [inviteData, setInviteData] = useState(null);
 
-  // OTP State
   const [otpCode, setOtpCode] = useState("");
   const [otpExpiresAt, setOtpExpiresAt] = useState(null);
   const [remainingSends, setRemainingSends] = useState(3);
   const [verificationToken, setVerificationToken] = useState("");
 
-  // Account Form State
   const [name, setName] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -251,7 +245,6 @@ export default function InviteAccept() {
         password,
       });
 
-      // Set auth token and active tenant
       setToken(res.data.token);
       if (setActiveTenantId) {
         setActiveTenantId(res.data.tenantId);
@@ -260,7 +253,6 @@ export default function InviteAccept() {
 
       setStep("success");
 
-      // Redirect after brief success message
       setTimeout(() => {
         navigate("/app");
       }, 1500);
@@ -277,7 +269,6 @@ export default function InviteAccept() {
     }
   };
 
-  // Loading state
   if (step === "loading") {
     return (
       <AuthLayout title="Verifying Invitation...">
@@ -288,7 +279,6 @@ export default function InviteAccept() {
     );
   }
 
-  // Error state
   if (step === "error") {
     return (
       <AuthLayout title="Invitation Error">
@@ -307,7 +297,6 @@ export default function InviteAccept() {
     );
   }
 
-  // Success state
   if (step === "success") {
     return (
       <AuthLayout title="Welcome to the team!">

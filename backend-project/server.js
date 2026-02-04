@@ -1,6 +1,6 @@
 require('dotenv').config();
 const dns = require('dns');
-// Use Google Public DNS to bypass local network DNS restrictions
+
 dns.setServers(['8.8.8.8', '8.8.4.4', '1.1.1.1']);
 
 const express = require('express');
@@ -37,13 +37,11 @@ const PORT = process.env.PORT || 5000;
 const JWT_SECRET = process.env.JWT_SECRET;
 const MONGO_URI = process.env.MONGO_URI;
 
-// Middleware chains
 const tenantStack = [authenticateToken, tenantContextMiddleware, membershipMiddleware];
 
 app.use(cors());
 app.use(express.json());
 
-// Handle JSON parsing errors gracefully
 app.use((err, req, res, next) => {
   if (err instanceof SyntaxError && err.status === 400 && 'body' in err) {
     return res.status(400).json({ message: 'Invalid JSON in request body' });
@@ -51,12 +49,10 @@ app.use((err, req, res, next) => {
   next(err);
 });
 
-// MongoDB Connection
 mongoose.connect(MONGO_URI)
   .then(() => console.log('MongoDB connected'))
   .catch(err => console.error('MongoDB connection error:', err));
 
-// Middleware to authenticate token
 function authenticateToken(req, res, next) {
   const authHeader = req.headers['authorization'];
   const token = authHeader && authHeader.split(' ')[1];
@@ -69,7 +65,6 @@ function authenticateToken(req, res, next) {
   });
 }
 
-// User login
 app.post('/api/login', async (req, res) => {
   const { email, password } = req.body;
   
@@ -87,7 +82,6 @@ app.post('/api/login', async (req, res) => {
   }
 });
 
-// Forgot Password - Request reset link
 app.post('/api/forgot-password', async (req, res) => {
   const { email } = req.body;
   
@@ -97,23 +91,19 @@ app.post('/api/forgot-password', async (req, res) => {
 
   try {
     const user = await User.findOne({ email });
-    
-    // Always return success message to prevent email enumeration
+
     if (!user) {
       return res.json({ message: 'If an account exists with this email, you will receive a password reset link.' });
     }
 
-    // Generate reset token
     const crypto = require('crypto');
     const resetToken = crypto.randomBytes(32).toString('hex');
     const resetTokenHash = await bcrypt.hash(resetToken, 10);
-    
-    // Save token and expiry (1 hour)
+
     user.resetPasswordToken = resetTokenHash;
-    user.resetPasswordExpires = new Date(Date.now() + 3600000); // 1 hour
+    user.resetPasswordExpires = new Date(Date.now() + 3600000); 
     await user.save();
 
-    // Send email (don't fail if email service has issues)
     try {
       await EmailService.sendPasswordResetEmail({
         to: user.email,
@@ -123,7 +113,7 @@ app.post('/api/forgot-password', async (req, res) => {
       console.log('[ForgotPassword] Reset email sent to:', user.email);
     } catch (emailError) {
       console.error('[ForgotPassword] Email send failed:', emailError.message);
-      // In development, log the reset link so it can be used for testing
+      
       const resetUrl = `${process.env.APP_PUBLIC_URL || 'http://localhost:5173'}/reset-password/${resetToken}`;
       console.log('[ForgotPassword] DEV MODE - Reset link:', resetUrl);
     }
@@ -135,7 +125,6 @@ app.post('/api/forgot-password', async (req, res) => {
   }
 });
 
-// Reset Password - Set new password
 app.post('/api/reset-password', async (req, res) => {
   const { token, password } = req.body;
   
@@ -148,12 +137,11 @@ app.post('/api/reset-password', async (req, res) => {
   }
 
   try {
-    // Find users with non-expired reset tokens
+    
     const users = await User.find({
       resetPasswordExpires: { $gt: new Date() }
     });
 
-    // Find the user whose token matches
     let matchedUser = null;
     for (const user of users) {
       if (user.resetPasswordToken) {
@@ -169,7 +157,6 @@ app.post('/api/reset-password', async (req, res) => {
       return res.status(400).json({ message: 'Invalid or expired reset link. Please request a new one.' });
     }
 
-    // Update password
     const hashedPassword = await bcrypt.hash(password, 10);
     matchedUser.password = hashedPassword;
     matchedUser.resetPasswordToken = undefined;
@@ -183,7 +170,6 @@ app.post('/api/reset-password', async (req, res) => {
   }
 });
 
-// SaaS Signup (Tenant + User + Owner Membership)
 app.post('/api/signup', async (req, res) => {
   const { garageName, ownerName, email, password, address, type } = req.body;
   
@@ -198,8 +184,7 @@ app.post('/api/signup', async (req, res) => {
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
-    
-    // Create Tenant first
+
     const slug = garageName.toLowerCase().replace(/ /g, '-').replace(/[^\w-]+/g, '');
     const tenant = await Tenant.create({ 
       name: garageName, 
@@ -208,14 +193,12 @@ app.post('/api/signup', async (req, res) => {
       type: type || 'GENERAL'
     });
 
-    // Create User
     const user = await User.create({ 
       name: ownerName, 
       email, 
       password: hashedPassword 
     });
 
-    // Create OWNER Membership
     await Membership.create({
       tenantId: tenant._id,
       userId: user._id,
@@ -235,7 +218,6 @@ app.post('/api/signup', async (req, res) => {
   }
 });
 
-// Basic User registration (for invites or late signups)
 app.post('/api/register', async (req, res) => {
   const { name, email, password } = req.body;
   if (!name || !email || !password) {
@@ -254,7 +236,6 @@ app.post('/api/register', async (req, res) => {
   }
 });
 
-// SaaS Tenant & Membership Routes
 app.get('/api/me', authenticateToken, async (req, res) => {
   try {
     const memberships = await Membership.find({ userId: req.user.id, status: 'ACTIVE' }).populate('tenantId');
@@ -311,8 +292,7 @@ app.patch('/api/tenants/:tenantId/members/:membershipId', ...tenantStack, requir
   try {
     const membership = await Membership.findOne({ _id: req.params.membershipId, tenantId: req.tenantId });
     if (!membership) return res.status(404).json({ message: 'Membership not found' });
-    
-    // Prevent owner from demoting themselves if they are the last owner
+
     if (membership.userId.toString() === req.user.id && role && role !== 'OWNER') {
       const otherOwners = await Membership.countDocuments({ tenantId: req.tenantId, role: 'OWNER', _id: { $ne: membership._id } });
       if (otherOwners === 0) return res.status(400).json({ message: 'Cannot demote the last owner' });
@@ -339,8 +319,7 @@ app.post('/api/tenants/:tenantId/invites', ...tenantStack, requireRole(['OWNER',
   
   try {
     console.log(`[Invites] Creating invite for ${normalizedEmail} in tenant ${req.tenantId}`);
-    
-    // Check for existing pending invite
+
     const existingInvite = await Invite.findOne({
       tenantId: new mongoose.Types.ObjectId(req.tenantId),
       email: normalizedEmail,
@@ -351,8 +330,7 @@ app.post('/api/tenants/:tenantId/invites', ...tenantStack, requireRole(['OWNER',
     if (existingInvite) {
       return res.status(409).json({ message: 'A pending invite already exists for this email' });
     }
-    
-    // Check if user is already a member
+
     const existingUser = await User.findOne({ email: normalizedEmail });
     if (existingUser) {
       const existingMembership = await Membership.findOne({
@@ -372,17 +350,14 @@ app.post('/api/tenants/:tenantId/invites', ...tenantStack, requireRole(['OWNER',
       email: normalizedEmail,
       role,
       tokenHash,
-      expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days
+      expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), 
       createdByUserId: new mongoose.Types.ObjectId(req.user.id)
     });
-    
-    // Get tenant name for email
+
     const tenant = await Tenant.findById(req.tenantId);
-    
-    // Build the invite link for admin to view/share
+
     const inviteLink = `${process.env.APP_PUBLIC_URL || 'http://localhost:5173'}/invite/${token}`;
-    
-    // Send invite email via EmailService
+
     try {
       await EmailService.sendInviteEmail({
         to: normalizedEmail,
@@ -394,18 +369,8 @@ app.post('/api/tenants/:tenantId/invites', ...tenantStack, requireRole(['OWNER',
       console.log(`[Invites] Invite email sent to ${normalizedEmail}`);
     } catch (emailError) {
       console.error('[Invites] Failed to send invite email:', emailError.message);
-      // Log the invite link prominently so it can be shared manually
-      console.log('');
-      console.log('='.repeat(60));
-      console.log('[Invites] EMAIL FAILED - Share this link manually:');
-      console.log(`[Invites] Invite Link: ${inviteLink}`);
-      console.log(`[Invites] For: ${normalizedEmail}`);
-      console.log('='.repeat(60));
-      console.log('');
-      // Don't fail the request if email fails - invite is still created
     }
-    
-    // Audit log
+
     await logAudit({
       tenantId: req.tenantId,
       actorUserId: req.user.id,
@@ -424,7 +389,7 @@ app.post('/api/tenants/:tenantId/invites', ...tenantStack, requireRole(['OWNER',
         email: normalizedEmail,
         role,
         expiresAt: invite.expiresAt,
-        inviteLink // Return the link so admin can copy/share it manually if needed
+        inviteLink 
       }
     });
   } catch (error) {
@@ -436,28 +401,25 @@ app.post('/api/tenants/:tenantId/invites', ...tenantStack, requireRole(['OWNER',
 app.get('/api/tenants/:tenantId/invites', ...tenantStack, requireRole(['OWNER', 'MANAGER']), async (req, res) => {
   try {
     console.log(`[Invites] GET request - Tenant: ${req.tenantId}, User: ${req.user.id}, Role: ${req.membership.role}`);
-    
-    // Get query params for filtering
+
     const { status, includeExpired } = req.query;
     
     let query = {
       tenantId: new mongoose.Types.ObjectId(req.tenantId)
     };
-    
-    // Filter by status
+
     if (status === 'all') {
-      // No status filter - get all
+      
     } else if (status === 'used') {
       query.status = 'USED';
     } else {
-      // Default: only pending
+      
       query.$or = [
         { status: 'PENDING' },
         { status: { $exists: false } }
       ];
     }
-    
-    // Filter by expiry
+
     if (includeExpired !== 'true' && status !== 'all' && status !== 'used') {
       query.expiresAt = { $gt: new Date() };
     }
@@ -465,8 +427,7 @@ app.get('/api/tenants/:tenantId/invites', ...tenantStack, requireRole(['OWNER', 
     const invites = await Invite.find(query)
       .populate('createdByUserId', 'name email')
       .sort({ createdAt: -1 });
-    
-    // Add computed fields
+
     const enrichedInvites = invites.map(invite => ({
       ...invite.toObject(),
       id: invite._id,
@@ -488,7 +449,6 @@ app.get('/api/tenants/:tenantId/invites', ...tenantStack, requireRole(['OWNER', 
   }
 });
 
-// Get single invite details
 app.get('/api/tenants/:tenantId/invites/:inviteId', ...tenantStack, requireRole(['OWNER', 'MANAGER']), async (req, res) => {
   try {
     const invite = await Invite.findOne({
@@ -520,7 +480,6 @@ app.get('/api/tenants/:tenantId/invites/:inviteId', ...tenantStack, requireRole(
   }
 });
 
-// Resend invite email - generates a new token and sends email
 app.post('/api/tenants/:tenantId/invites/:inviteId/resend', ...tenantStack, requireRole(['OWNER', 'MANAGER']), async (req, res) => {
   try {
     const invite = await Invite.findOne({ 
@@ -534,16 +493,13 @@ app.post('/api/tenants/:tenantId/invites/:inviteId/resend', ...tenantStack, requ
       return res.status(404).json({ message: 'Invite not found or expired' });
     }
 
-    // Get tenant name for the email
     const tenant = await Tenant.findById(req.tenantId);
-    
-    // Generate new token
+
     const newToken = crypto.randomBytes(32).toString('hex');
     const tokenHash = crypto.createHash('sha256').update(newToken).digest('hex');
-    
-    // Update invite with new token and reset OTP fields
+
     invite.tokenHash = tokenHash;
-    invite.expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
+    invite.expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); 
     invite.otpHash = null;
     invite.otpExpiresAt = null;
     invite.otpAttempts = 0;
@@ -552,10 +508,8 @@ app.post('/api/tenants/:tenantId/invites/:inviteId/resend', ...tenantStack, requ
     invite.lockedUntil = null;
     await invite.save();
 
-    // Build the invite link
     const inviteLink = `${process.env.APP_PUBLIC_URL || 'http://localhost:5173'}/invite/${newToken}`;
 
-    // Send email
     try {
       await EmailService.sendInviteEmail({
         to: invite.email,
@@ -567,14 +521,6 @@ app.post('/api/tenants/:tenantId/invites/:inviteId/resend', ...tenantStack, requ
       console.log(`[Invites] Resent invite email to ${invite.email}`);
     } catch (emailError) {
       console.error('[Invites] Failed to send resend invite email:', emailError.message);
-      console.log('');
-      console.log('='.repeat(60));
-      console.log('[Invites] EMAIL FAILED - Share this link manually:');
-      console.log(`[Invites] Invite Link: ${inviteLink}`);
-      console.log(`[Invites] For: ${invite.email}`);
-      console.log('='.repeat(60));
-      console.log('');
-      // Don't fail - invite is still updated with new token
     }
 
     console.log(`[Invites] Resent invite to ${invite.email}`);
@@ -605,13 +551,6 @@ app.delete('/api/tenants/:tenantId/invites/:inviteId', ...tenantStack, requireRo
   }
 });
 
-// ============================================================
-// SECURE INVITE ENDPOINTS WITH OTP VERIFICATION
-// ============================================================
-
-/**
- * Middleware to load invite by token hash
- */
 const loadInviteByToken = async (req, res, next) => {
   const { token } = req.params;
   if (!token || token.length < 32) {
@@ -625,13 +564,11 @@ const loadInviteByToken = async (req, res, next) => {
     if (!invite) {
       return res.status(404).json({ message: 'Invalid invite token', code: 'INVALID_TOKEN' });
     }
-    
-    // Check if expired
+
     if (invite.expiresAt < new Date()) {
       return res.status(410).json({ message: 'This invite has expired', code: 'INVITE_EXPIRED' });
     }
-    
-    // Check if already used
+
     if (invite.usedAt || invite.status === 'ACCEPTED') {
       return res.status(410).json({ message: 'This invite has already been used', code: 'INVITE_USED' });
     }
@@ -645,19 +582,12 @@ const loadInviteByToken = async (req, res, next) => {
   }
 };
 
-/**
- * Helper to mask email for display
- */
 const maskEmail = (email) => {
   const [local, domain] = email.split('@');
   if (local.length <= 2) return `${local[0]}***@${domain}`;
   return `${local[0]}${local[1]}***@${domain}`;
 };
 
-/**
- * GET /api/invites/:token/preview
- * Returns invite details for display (masked email, garage name, role)
- */
 app.get('/api/invites/:token/preview', loadInviteByToken, async (req, res) => {
   const invite = req.invite;
   
@@ -672,10 +602,6 @@ app.get('/api/invites/:token/preview', loadInviteByToken, async (req, res) => {
   });
 });
 
-/**
- * POST /api/invites/:token/send-code
- * Generates and sends OTP to invited email
- */
 app.post('/api/invites/:token/send-code', 
   loadInviteByToken, 
   checkInviteLocked,
@@ -684,26 +610,23 @@ app.post('/api/invites/:token/send-code',
     const invite = req.invite;
     
     try {
-      // Generate 6-digit OTP
+      
       const otp = Math.floor(100000 + Math.random() * 900000).toString();
       const otpHash = crypto.createHash('sha256').update(otp).digest('hex');
-      
-      // Update invite with OTP data
+
       invite.otpHash = otpHash;
-      invite.otpExpiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+      invite.otpExpiresAt = new Date(Date.now() + 10 * 60 * 1000); 
       invite.otpSendCount = (invite.otpSendCount || 0) + 1;
       invite.otpLastSentAt = new Date();
-      invite.otpAttempts = 0; // Reset attempts on new code
+      invite.otpAttempts = 0; 
       await invite.save();
-      
-      // Send OTP email
+
       await EmailService.sendOtpEmail({
         to: invite.email,
         code: otp,
         garageName: invite.tenantId.name
       });
-      
-      // Audit log
+
       await logAudit({
         tenantId: invite.tenantId._id,
         actorUserId: invite.createdByUserId,
@@ -727,10 +650,6 @@ app.post('/api/invites/:token/send-code',
   }
 );
 
-/**
- * POST /api/invites/:token/verify-code
- * Verifies OTP and returns short-lived verification token
- */
 app.post('/api/invites/:token/verify-code',
   loadInviteByToken,
   checkInviteLocked,
@@ -743,30 +662,27 @@ app.post('/api/invites/:token/verify-code',
     }
     
     try {
-      // Check if OTP exists
+      
       if (!invite.otpHash) {
         return res.status(400).json({ 
           message: 'No verification code has been sent. Please request a code first.',
           code: 'NO_OTP_SENT'
         });
       }
-      
-      // Check if OTP expired
+
       if (invite.otpExpiresAt < new Date()) {
         return res.status(400).json({ 
           message: 'Verification code has expired. Please request a new code.',
           code: 'OTP_EXPIRED'
         });
       }
-      
-      // Verify OTP
+
       const codeHash = crypto.createHash('sha256').update(code).digest('hex');
       if (codeHash !== invite.otpHash) {
         invite.otpAttempts = (invite.otpAttempts || 0) + 1;
-        
-        // Lock after 5 failed attempts
+
         if (invite.otpAttempts >= 5) {
-          invite.lockedUntil = new Date(Date.now() + 60 * 60 * 1000); // 1 hour lockout
+          invite.lockedUntil = new Date(Date.now() + 60 * 60 * 1000); 
           await invite.save();
           
           await logAudit({
@@ -793,12 +709,11 @@ app.post('/api/invites/:token/verify-code',
           remainingAttempts: remaining
         });
       }
-      
-      // OTP verified - generate short-lived verification token
+
       const verificationToken = crypto.randomBytes(32).toString('hex');
       invite.verificationToken = crypto.createHash('sha256').update(verificationToken).digest('hex');
-      invite.verificationTokenExpiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
-      invite.otpHash = null; // Clear OTP after successful verification
+      invite.verificationTokenExpiresAt = new Date(Date.now() + 10 * 60 * 1000); 
+      invite.otpHash = null; 
       invite.otpAttempts = 0;
       await invite.save();
       
@@ -815,19 +730,13 @@ app.post('/api/invites/:token/verify-code',
   }
 );
 
-/**
- * POST /api/invites/:token/accept
- * Completes invite acceptance - requires valid verification token
- * Creates user (if needed) and membership
- */
 app.post('/api/invites/:token/accept',
   inviteAcceptLimiter,
   loadInviteByToken,
   async (req, res) => {
     const invite = req.invite;
     const { verificationToken, name, password } = req.body;
-    
-    // Validate verification token
+
     if (!verificationToken) {
       return res.status(401).json({ 
         message: 'Email verification required',
@@ -849,8 +758,7 @@ app.post('/api/invites/:token/accept',
         code: 'VERIFICATION_EXPIRED'
       });
     }
-    
-    // Validate required fields for new users
+
     if (!name || !password) {
       return res.status(400).json({ message: 'Name and password are required' });
     }
@@ -860,19 +768,19 @@ app.post('/api/invites/:token/accept',
     }
     
     try {
-      // Check if user already exists
+      
       let user = await User.findOne({ email: invite.email });
       let isNewUser = false;
       
       if (user) {
-        // Existing user - check if already a member
+        
         const existingMembership = await Membership.findOne({
           tenantId: invite.tenantId._id,
           userId: user._id
         });
         
         if (existingMembership) {
-          // Idempotent - already a member, mark invite as used
+          
           invite.usedAt = new Date();
           invite.status = 'ACCEPTED';
           await invite.save();
@@ -893,31 +801,28 @@ app.post('/api/invites/:token/accept',
           });
         }
       } else {
-        // Create new user
+        
         const hashedPassword = await bcrypt.hash(password, 10);
         user = await User.create({
           name,
-          email: invite.email, // Email from invite, not from request
+          email: invite.email, 
           password: hashedPassword
         });
         isNewUser = true;
       }
-      
-      // Create membership with role from invite
+
       await Membership.create({
         tenantId: invite.tenantId._id,
         userId: user._id,
-        role: invite.role, // Role comes from invite, NOT from user
+        role: invite.role, 
         status: 'ACTIVE'
       });
-      
-      // Mark invite as used
+
       invite.usedAt = new Date();
       invite.status = 'ACCEPTED';
       invite.verificationToken = null;
       await invite.save();
-      
-      // Audit log
+
       await logAudit({
         tenantId: invite.tenantId._id,
         actorUserId: user._id,
@@ -932,8 +837,7 @@ app.post('/api/invites/:token/accept',
         },
         req
       });
-      
-      // Generate auth token
+
       const authToken = jwt.sign(
         { id: user.id, email: user.email, name: user.name }, 
         JWT_SECRET, 
@@ -950,7 +854,7 @@ app.post('/api/invites/:token/accept',
         role: invite.role
       });
     } catch (error) {
-      // Handle duplicate membership (race condition)
+      
       if (error.code === 11000 && error.keyPattern?.tenantId && error.keyPattern?.userId) {
         return res.status(409).json({ 
           message: 'You are already a member of this garage',
@@ -963,7 +867,6 @@ app.post('/api/invites/:token/accept',
   }
 );
 
-// Legacy endpoint - redirect to preview
 app.get('/api/invites/:token', async (req, res) => {
   const { token } = req.params;
   try {
@@ -992,7 +895,6 @@ app.get('/api/invites/:token', async (req, res) => {
   }
 });
 
-// CRUD for SparePart
 app.get('/api/spareparts', ...tenantStack, async (req, res) => {
   try {
     const parts = await SparePart.find({ tenantId: req.tenantId });
@@ -1062,7 +964,6 @@ app.delete('/api/spareparts/:id', ...tenantStack, requireRole(['OWNER', 'MANAGER
     const part = await SparePart.findOne({ _id: id, tenantId: req.tenantId });
     if (!part) return res.status(404).json({ message: 'Spare part not found' });
 
-    // Check if part has any movements
     const movementsCount = await StockMovement.countDocuments({ sparePartId: id, tenantId: req.tenantId });
     if (movementsCount > 0) {
       return res.status(400).json({ message: 'Cannot delete part with history. Archive it instead.' });
@@ -1086,7 +987,6 @@ app.delete('/api/spareparts/:id', ...tenantStack, requireRole(['OWNER', 'MANAGER
   }
 });
 
-// Unified Stock Movements API
 app.get('/api/inventory/movements', ...tenantStack, async (req, res) => {
   try {
     const movements = await StockMovement.find({ tenantId: req.tenantId })
@@ -1101,8 +1001,7 @@ app.get('/api/inventory/movements', ...tenantStack, async (req, res) => {
 
 app.post('/api/inventory/move', ...tenantStack, requireRole(['OWNER', 'MANAGER', 'STOREKEEPER', 'MECHANIC']), async (req, res) => {
   const { sparePartId, type, quantity, reason, notes, referenceNumber, unitCost } = req.body;
-  
-  // Role checks for movement types
+
   if (type === 'IN' && !['OWNER', 'MANAGER', 'STOREKEEPER'].includes(req.membership.role)) {
     return res.status(403).json({ message: 'Only storekeepers/managers can add stock' });
   }
@@ -1139,7 +1038,6 @@ app.post('/api/inventory/move', ...tenantStack, requireRole(['OWNER', 'MANAGER',
   }
 });
 
-// Work Order APIs
 app.get('/api/workorders', ...tenantStack, async (req, res) => {
   try {
     const orders = await WorkOrder.find({ tenantId: req.tenantId })
@@ -1170,7 +1068,6 @@ app.patch('/api/workorders/:id/status', ...tenantStack, requireRole(['OWNER', 'M
   }
 });
 
-// Audit Log API (Owner Only)
 app.get('/api/audit-logs', ...tenantStack, requireRole(['OWNER']), async (req, res) => {
   try {
     const logs = await AuditLog.find({ tenantId: req.tenantId })
@@ -1183,7 +1080,6 @@ app.get('/api/audit-logs', ...tenantStack, requireRole(['OWNER']), async (req, r
   }
 });
 
-// Report APIs scoped to tenant
 app.get('/api/reports/daily-stockout', ...tenantStack, async (req, res) => {
   try {
     const report = await StockMovement.aggregate([

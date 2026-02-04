@@ -16,7 +16,7 @@ export default function WorkOrders() {
     vehiclePlate: '',
     title: '',
     description: '',
-    parts: [] // { sparePartId, quantity, unitPrice }
+    parts: [] 
   });
 
   const fetchData = async () => {

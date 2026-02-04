@@ -1,13 +1,3 @@
-/**
- * EmailService - Centralized email sending using Resend
- * 
- * All transactional emails go through this service.
- * Configuration via environment variables:
- *   - RESEND_API_KEY: API key for Resend
- *   - EMAIL_FROM: Sender address (default: onboarding@resend.dev for sandbox)
- *   - APP_PUBLIC_URL: Frontend URL for links in emails
- */
-
 const { Resend } = require('resend');
 
 class EmailService {
@@ -19,24 +9,15 @@ class EmailService {
     } else {
       this.resend = new Resend(apiKey);
     }
-    
-    // Default to Resend sandbox sender if EMAIL_FROM not set
+
     this.from = process.env.EMAIL_FROM || 'onboarding@resend.dev';
     this.appUrl = process.env.APP_PUBLIC_URL || 'http://localhost:5173';
   }
 
-  /**
-   * Sleep helper for retry delays
-   * @private
-   */
   _sleep(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
   }
 
-  /**
-   * Send an email via Resend with retry logic for rate limits
-   * @private
-   */
   async _send({ to, subject, html, text }) {
     const payload = {
       from: this.from,
@@ -77,10 +58,9 @@ class EmailService {
           to: payload.to
         });
 
-        // Check if it's a rate limit error (429) or temporary server error (5xx)
         if (statusCode === 429 || (statusCode >= 500 && statusCode < 600)) {
           if (attempt < maxRetries) {
-            // Exponential backoff: 2s, 4s, 8s...
+            
             const delay = Math.pow(2, attempt) * 1000;
             console.log(`[EmailService] Rate limited or server error, retrying in ${delay}ms...`);
             await this._sleep(delay);
@@ -88,7 +68,6 @@ class EmailService {
           }
         }
 
-        // For other errors (400, 401, 403, etc.), don't retry
         if (statusCode >= 400 && statusCode < 500 && statusCode !== 429) {
           console.error('[EmailService] Non-retryable error:', errorMessage);
           break;
@@ -100,15 +79,6 @@ class EmailService {
     throw lastError;
   }
 
-  /**
-   * Send invite email with link to accept
-   * @param {Object} params
-   * @param {string} params.to - Recipient email
-   * @param {string} params.garageName - Name of the garage/tenant
-   * @param {string} params.role - Role being offered
-   * @param {string} params.token - Raw invite token (not hashed)
-   * @param {string} params.inviterName - Name of person who sent invite
-   */
   async sendInviteEmail({ to, garageName, role, token, inviterName }) {
     const inviteUrl = `${this.appUrl}/invite/${token}`;
     
@@ -171,13 +141,6 @@ If you didn't expect this email, you can safely ignore it.
     return this._send({ to, subject, html, text });
   }
 
-  /**
-   * Send OTP verification code email
-   * @param {Object} params
-   * @param {string} params.to - Recipient email
-   * @param {string} params.code - 6-digit OTP code
-   * @param {string} params.garageName - Name of the garage for context
-   */
   async sendOtpEmail({ to, code, garageName }) {
     const subject = 'Your verification code';
     
@@ -227,13 +190,6 @@ If you didn't request this code, please ignore this email.
     return this._send({ to, subject, html, text });
   }
 
-  /**
-   * Send password reset email
-   * @param {Object} params
-   * @param {string} params.to - Recipient email
-   * @param {string} params.resetToken - Password reset token
-   * @param {string} params.userName - User's name for personalization
-   */
   async sendPasswordResetEmail({ to, resetToken, userName }) {
     const resetUrl = `${this.appUrl}/reset-password/${resetToken}`;
     
@@ -295,5 +251,4 @@ If you didn't request a password reset, please ignore this email. Your password 
   }
 }
 
-// Export singleton instance
 module.exports = new EmailService();

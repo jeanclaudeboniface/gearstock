@@ -6,7 +6,7 @@ export default function Layout({ children, logout }) {
 
   return (
     <div className="flex h-screen bg-gray-100 overflow-hidden">
-      {/* Mobile Sidebar Overlay */}
+      {}
       {isSidebarOpen && (
         <div 
           className="fixed inset-0 bg-black bg-opacity-50 z-20 lg:hidden"
@@ -14,14 +14,14 @@ export default function Layout({ children, logout }) {
         ></div>
       )}
 
-      {/* Sidebar */}
+      {}
       <div className={`fixed inset-y-0 left-0 z-30 w-64 bg-gray-900 transition-transform duration-300 transform lg:translate-x-0 lg:static lg:inset-0 ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
         <Sidebar logout={logout} closeSidebar={() => setIsSidebarOpen(false)} />
       </div>
 
-      {/* Main Content */}
+      {}
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
-        {/* Mobile Header */}
+        {}
         <header className="bg-white shadow-sm lg:hidden flex items-center justify-between p-4">
           <button 
             onClick={() => setIsSidebarOpen(true)}
@@ -32,7 +32,7 @@ export default function Layout({ children, logout }) {
             </svg>
           </button>
           <span className="font-semibold text-gray-700">Stock Inventory</span>
-          <div className="w-6"></div> {/* Spacer for centering */}
+          <div className="w-6"></div> {}
         </header>
 
         <main className="flex-1 overflow-auto p-4 md:p-6">
