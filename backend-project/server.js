@@ -198,9 +198,15 @@ app.post('/api/signup', async (req, res) => {
       return res.status(409).json({ message: 'Email already registered' });
     }
 
+    const slug = garageName.toLowerCase().replace(/ /g, '-').replace(/[^\w-]+/g, '');
+    
+    const existingTenant = await Tenant.findOne({ slug });
+    if (existingTenant) {
+      return res.status(409).json({ message: 'A garage with this name already exists. Please choose a different name.' });
+    }
+
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    const slug = garageName.toLowerCase().replace(/ /g, '-').replace(/[^\w-]+/g, '');
     const tenant = await Tenant.create({ 
       name: garageName, 
       slug,
