@@ -221,20 +221,20 @@ export default function TeamManagement() {
   }
 
   return (
-    <div className="max-w-5xl mx-auto p-4 space-y-8">
-      <div className="flex justify-between items-end">
+    <div className="max-w-5xl mx-auto p-4 space-y-6 sm:space-y-8">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-end gap-4">
         <div>
-          <h2 className="text-3xl font-extrabold text-slate-900 tracking-tight">
+          <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
             Team Management
           </h2>
-          <p className="text-slate-500 mt-1">
+          <p className="text-slate-500 mt-1 text-sm sm:text-base">
             Manage staff access and roles for your garage.
           </p>
         </div>
         {activeTab === "invites" && (
           <button
             onClick={() => setIsInviteModalOpen(true)}
-            className="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2.5 rounded-xl font-bold shadow-lg shadow-indigo-100 transition-all flex items-center"
+            className="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3 sm:py-2.5 rounded-xl font-bold shadow-lg shadow-indigo-100 transition-all flex items-center justify-center w-full sm:w-auto"
           >
             <svg
               className="w-5 h-5 mr-2"
@@ -249,39 +249,116 @@ export default function TeamManagement() {
                 d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"
               />
             </svg>
-            New Invitation
+            <span className="hidden sm:inline">New Invitation</span>
+            <span className="sm:hidden">Invite</span>
           </button>
         )}
       </div>
 
-      <div className="border-b border-slate-200">
-        <nav className="-mb-px flex space-x-8">
+      <div className="border-b border-slate-200 overflow-x-auto">
+        <nav className="-mb-px flex space-x-4 sm:space-x-8 min-w-max">
           <button
             onClick={() => setActiveTab("members")}
-            className={`py-4 px-1 border-b-2 font-bold text-sm transition-all ${
+            className={`py-3 sm:py-4 px-1 border-b-2 font-bold text-sm transition-all whitespace-nowrap ${
               activeTab === "members"
                 ? "border-indigo-600 text-indigo-600"
                 : "border-transparent text-slate-400 hover:text-slate-600 hover:border-slate-300"
             }`}
           >
-            Active Members ({members.length})
+            Members ({members.length})
           </button>
           <button
             onClick={() => setActiveTab("invites")}
-            className={`py-4 px-1 border-b-2 font-bold text-sm transition-all ${
+            className={`py-3 sm:py-4 px-1 border-b-2 font-bold text-sm transition-all whitespace-nowrap ${
               activeTab === "invites"
                 ? "border-indigo-600 text-indigo-600"
                 : "border-transparent text-slate-400 hover:text-slate-600 hover:border-slate-300"
             }`}
           >
-            Pending Invites ({invites.length})
+            Invites ({invites.length})
           </button>
         </nav>
       </div>
 
       {activeTab === "members" ? (
         <section className="animate-in fade-in slide-in-from-bottom-2 duration-300">
-          <div className="bg-white rounded-3xl shadow-sm border border-slate-100 overflow-hidden">
+          {/* Mobile Card View */}
+          <div className="sm:hidden space-y-4">
+            {members.map((m) => (
+              <div
+                key={m.id || m._id}
+                className="bg-white rounded-2xl shadow-sm border border-slate-100 p-4"
+              >
+                <div className="flex justify-between items-start mb-3">
+                  <div className="min-w-0 flex-1">
+                    <h3 className="font-bold text-slate-900 truncate">
+                      {m.userId?.name}
+                    </h3>
+                    <p className="text-xs text-slate-400 truncate">
+                      {m.userId?.email}
+                    </p>
+                  </div>
+                  <span
+                    className={`text-[10px] font-bold px-2 py-0.5 rounded-full shrink-0 ml-2 ${
+                      m.status === "ACTIVE"
+                        ? "bg-green-100 text-green-700"
+                        : "bg-red-100 text-red-700"
+                    }`}
+                  >
+                    {m.status}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between">
+                  {userRole === "OWNER" ? (
+                    <select
+                      value={m.role}
+                      onChange={(e) =>
+                        updateMemberRole(m.id || m._id, e.target.value)
+                      }
+                      className="bg-slate-100 text-xs font-bold py-2 px-3 rounded-lg outline-none"
+                    >
+                      {ROLES.map((r) => (
+                        <option key={r} value={r}>
+                          {r}
+                        </option>
+                      ))}
+                    </select>
+                  ) : (
+                    <span className="text-xs font-bold bg-slate-100 px-3 py-2 rounded-lg">
+                      {m.role}
+                    </span>
+                  )}
+                  {userRole === "OWNER" && m.role !== "OWNER" && (
+                    <button
+                      onClick={() =>
+                        updateMemberStatus(
+                          m.id || m._id,
+                          m.status === "ACTIVE" ? "SUSPENDED" : "ACTIVE",
+                        )
+                      }
+                      className={`text-sm font-bold py-2 px-3 rounded-lg ${
+                        m.status === "ACTIVE"
+                          ? "text-red-600 bg-red-50"
+                          : "text-green-600 bg-green-50"
+                      }`}
+                    >
+                      {m.status === "ACTIVE" ? "Suspend" : "Activate"}
+                    </button>
+                  )}
+                </div>
+              </div>
+            ))}
+            {members.length === 0 && !loading && (
+              <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-8 text-center">
+                <p className="text-slate-400 font-medium">
+                  No team members found.
+                </p>
+              </div>
+            )}
+          </div>
+
+          {/* Desktop Table View */}
+          <div className="hidden sm:block bg-white rounded-3xl shadow-sm border border-slate-100 overflow-hidden">
             <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="bg-slate-50/50 border-b border-slate-100">
@@ -381,10 +458,10 @@ export default function TeamManagement() {
       ) : (
         <section className="animate-in fade-in slide-in-from-bottom-2 duration-300 space-y-4">
           {}
-          <div className="flex gap-2">
+          <div className="flex gap-2 overflow-x-auto pb-2">
             <button
               onClick={() => setInviteFilter("pending")}
-              className={`px-4 py-2 rounded-lg text-sm font-bold transition-colors ${
+              className={`px-4 py-2.5 rounded-lg text-sm font-bold transition-colors whitespace-nowrap ${
                 inviteFilter === "pending"
                   ? "bg-indigo-600 text-white"
                   : "bg-slate-100 text-slate-600 hover:bg-slate-200"
@@ -394,7 +471,7 @@ export default function TeamManagement() {
             </button>
             <button
               onClick={() => setInviteFilter("used")}
-              className={`px-4 py-2 rounded-lg text-sm font-bold transition-colors ${
+              className={`px-4 py-2.5 rounded-lg text-sm font-bold transition-colors whitespace-nowrap ${
                 inviteFilter === "used"
                   ? "bg-green-600 text-white"
                   : "bg-slate-100 text-slate-600 hover:bg-slate-200"

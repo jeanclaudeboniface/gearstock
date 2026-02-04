@@ -45,7 +45,7 @@ export default function Sidebar({ logout, closeSidebar }) {
 
   return (
     <div className="h-full bg-slate-900 text-white flex flex-col shadow-2xl">
-      <div className="px-8 py-10 flex justify-between items-center">
+      <div className="px-6 sm:px-8 py-8 sm:py-10 flex justify-between items-center">
         <div>
           <Logo size="md" variant="light" />
           <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mt-2">
@@ -54,7 +54,8 @@ export default function Sidebar({ logout, closeSidebar }) {
         </div>
         <button
           onClick={closeSidebar}
-          className="lg:hidden text-slate-400 hover:text-white"
+          className="lg:hidden text-slate-400 hover:text-white p-2 min-w-[44px] min-h-[44px] flex items-center justify-center hover:bg-slate-800 rounded-xl transition-colors active:bg-slate-700"
+          aria-label="Close menu"
         >
           <svg
             className="w-6 h-6"
