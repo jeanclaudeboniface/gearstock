@@ -14,6 +14,7 @@ const inviteSchema = new mongoose.Schema({
     required: true 
   },
   tokenHash: { type: String, required: true },
+  token: { type: String, default: null }, // Raw token for pending invites (to allow link copying)
   expiresAt: { type: Date, required: true },
   status: { 
     type: String, 
@@ -49,6 +50,7 @@ inviteSchema.set('toJSON', {
     delete ret.tokenHash;
     delete ret.otpHash;
     delete ret.verificationToken;
+    // Note: token is intentionally kept for pending invites so users can copy the link
   }
 });
 

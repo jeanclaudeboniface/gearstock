@@ -372,6 +372,7 @@ app.post('/api/tenants/:tenantId/invites', ...tenantStack, requireRole(['OWNER',
       email: normalizedEmail,
       role,
       tokenHash,
+      token, // Store raw token so users can copy the link later
       expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), 
       createdByUserId: new mongoose.Types.ObjectId(req.user.id)
     });
@@ -450,18 +451,29 @@ app.get('/api/tenants/:tenantId/invites', ...tenantStack, requireRole(['OWNER', 
       .populate('createdByUserId', 'name email')
       .sort({ createdAt: -1 });
 
-    const enrichedInvites = invites.map(invite => ({
-      ...invite.toObject(),
-      id: invite._id,
-      isExpired: new Date(invite.expiresAt) < new Date(),
-      isLocked: invite.lockedUntil && new Date(invite.lockedUntil) > new Date(),
-      otpSendCount: invite.otpSendCount || 0,
-      otpAttempts: invite.otpAttempts || 0,
-      createdBy: invite.createdByUserId ? {
-        name: invite.createdByUserId.name,
-        email: invite.createdByUserId.email
-      } : null
-    }));
+    const appUrl = process.env.APP_PUBLIC_URL || 'http://localhost:5173';
+    
+    const enrichedInvites = invites.map(invite => {
+      const inviteObj = invite.toObject();
+      const isPending = invite.status === 'PENDING' && new Date(invite.expiresAt) > new Date();
+      
+      return {
+        ...inviteObj,
+        id: invite._id,
+        isExpired: new Date(invite.expiresAt) < new Date(),
+        isLocked: invite.lockedUntil && new Date(invite.lockedUntil) > new Date(),
+        otpSendCount: invite.otpSendCount || 0,
+        otpAttempts: invite.otpAttempts || 0,
+        createdBy: invite.createdByUserId ? {
+          name: invite.createdByUserId.name,
+          email: invite.createdByUserId.email
+        } : null,
+        // Include invite link only for pending, non-expired invites
+        inviteLink: isPending && invite.token ? `${appUrl}/invite/${invite.token}` : null,
+        // Remove raw token from response for security
+        token: undefined
+      };
+    });
     
     console.log(`[Invites] Found ${enrichedInvites.length} invites`);
     res.json(enrichedInvites);
@@ -521,6 +533,7 @@ app.post('/api/tenants/:tenantId/invites/:inviteId/resend', ...tenantStack, requ
     const tokenHash = crypto.createHash('sha256').update(newToken).digest('hex');
 
     invite.tokenHash = tokenHash;
+    invite.token = newToken; // Store new token for link copying
     invite.expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); 
     invite.otpHash = null;
     invite.otpExpiresAt = null;
