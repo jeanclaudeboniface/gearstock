@@ -42,7 +42,9 @@ const tenantStack = [authenticateToken, tenantContextMiddleware, membershipMiddl
 const allowedOrigins = [
   'http://localhost:5173',
   'http://localhost:5174',
-  'https://gearstock.netlify.app'
+  'https://gearstock.netlify.app',
+  'https://gearstock.app',
+  'https://www.gearstock.app'
 ];
 
 app.use(cors({
