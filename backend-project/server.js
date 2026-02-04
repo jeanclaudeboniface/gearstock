@@ -39,7 +39,22 @@ const MONGO_URI = process.env.MONGO_URI;
 
 const tenantStack = [authenticateToken, tenantContextMiddleware, membershipMiddleware];
 
-app.use(cors());
+const allowedOrigins = [
+  'http://localhost:5173',
+  'http://localhost:5174',
+  'https://gearstock.netlify.app'
+];
+
+app.use(cors({
+  origin: function(origin, callback) {
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  credentials: true
+}));
 app.use(express.json());
 
 app.use((err, req, res, next) => {
