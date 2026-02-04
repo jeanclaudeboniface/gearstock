@@ -10,7 +10,8 @@ class EmailService {
       this.resend = new Resend(apiKey);
     }
 
-    this.from = process.env.EMAIL_FROM || 'onboarding@resend.dev';
+    const emailAddress = process.env.EMAIL_FROM || 'onboarding@resend.dev';
+    this.from = `GearStock <${emailAddress}>`;
     this.appUrl = process.env.APP_PUBLIC_URL || 'http://localhost:5173';
   }
 
