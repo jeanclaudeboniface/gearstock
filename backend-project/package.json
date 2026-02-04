@@ -3,14 +3,16 @@
   "version": "1.0.0",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js"
+    "start": "node server.js",
+    "heroku-postbuild": "echo 'Build complete'"
   },
   "keywords": ["garage", "inventory", "management", "saas"],
   "author": "GearStock",
   "license": "ISC",
   "description": "GearStock API - Garage inventory and work order management system",
   "engines": {
-    "node": ">=18.0.0"
+    "node": "20.x",
+    "npm": "10.x"
   },
   "dependencies": {
     "axios": "^1.13.4",
