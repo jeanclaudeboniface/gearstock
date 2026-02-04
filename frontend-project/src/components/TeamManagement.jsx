@@ -121,6 +121,15 @@ export default function TeamManagement() {
     }
   };
 
+  const copyInviteLinkFromTable = async (link, email) => {
+    try {
+      await navigator.clipboard.writeText(link);
+      showToast(`Link for ${email} copied!`, "success");
+    } catch (err) {
+      showToast("Failed to copy link", "error");
+    }
+  };
+
   const revokeInvite = async (inviteId) => {
     try {
       await authAxios.delete(`/tenants/${activeTenantId}/invites/${inviteId}`);
@@ -491,7 +500,137 @@ export default function TeamManagement() {
             </button>
           </div>
 
-          <div className="bg-white rounded-3xl shadow-sm border border-slate-100 overflow-hidden">
+          {/* Mobile Card View for Invites */}
+          <div className="sm:hidden space-y-4">
+            {invites.map((i) => {
+              const getStatusBadge = () => {
+                if (i.status === "USED") {
+                  return (
+                    <span className="text-xs font-bold bg-green-100 text-green-700 px-2 py-1 rounded-lg">
+                      ✓ Accepted
+                    </span>
+                  );
+                }
+                if (i.isExpired) {
+                  return (
+                    <span className="text-xs font-bold bg-red-100 text-red-700 px-2 py-1 rounded-lg">
+                      Expired
+                    </span>
+                  );
+                }
+                if (i.isLocked) {
+                  return (
+                    <span className="text-xs font-bold bg-amber-100 text-amber-700 px-2 py-1 rounded-lg">
+                      🔒 Locked
+                    </span>
+                  );
+                }
+                return (
+                  <span className="text-xs font-bold bg-blue-100 text-blue-700 px-2 py-1 rounded-lg">
+                    Pending
+                  </span>
+                );
+              };
+
+              return (
+                <div
+                  key={i.id || i._id}
+                  className="bg-white rounded-2xl shadow-sm border border-slate-100 p-4"
+                >
+                  <div className="flex justify-between items-start mb-3">
+                    <div>
+                      <p className="font-bold text-slate-900">{i.email}</p>
+                      {i.createdBy && (
+                        <p className="text-xs text-slate-400">
+                          by {i.createdBy.name}
+                        </p>
+                      )}
+                    </div>
+                    {getStatusBadge()}
+                  </div>
+                  <div className="flex items-center justify-between mb-3">
+                    <span className="text-xs font-bold bg-indigo-50 text-indigo-700 px-2 py-1 rounded-lg">
+                      {i.role}
+                    </span>
+                    <span className="text-xs text-slate-500">
+                      {new Date(i.createdAt).toLocaleDateString()}
+                    </span>
+                  </div>
+
+                  {/* Invite Link Section for pending invites */}
+                  {i.inviteLink && i.status !== "USED" && !i.isExpired && (
+                    <div className="mb-3 p-3 bg-slate-50 rounded-xl">
+                      <p className="text-xs font-bold text-slate-500 uppercase mb-1">
+                        Invite Link
+                      </p>
+                      <div className="flex gap-2">
+                        <input
+                          type="text"
+                          readOnly
+                          value={i.inviteLink}
+                          className="flex-1 text-xs bg-white border border-slate-200 rounded-lg px-2 py-2 text-slate-600 truncate"
+                        />
+                        <button
+                          onClick={() =>
+                            copyInviteLinkFromTable(i.inviteLink, i.email)
+                          }
+                          className="px-3 py-2 bg-indigo-600 text-white text-xs font-bold rounded-lg hover:bg-indigo-700 transition-colors min-w-[60px]"
+                        >
+                          📋 Copy
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="flex flex-wrap gap-2 pt-2 border-t border-slate-100">
+                    <button
+                      onClick={() => viewInviteDetails(i)}
+                      className="text-xs font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 px-3 py-2 rounded-lg transition-colors"
+                    >
+                      👁 View
+                    </button>
+                    {i.status !== "USED" && !i.isExpired && (
+                      <button
+                        onClick={() => resendInvite(i.id || i._id, i.email)}
+                        className="text-xs font-bold text-indigo-600 bg-indigo-50 hover:bg-indigo-100 px-3 py-2 rounded-lg transition-colors"
+                      >
+                        📧 Resend
+                      </button>
+                    )}
+                    <button
+                      onClick={() => {
+                        setSelectedInvite(i);
+                        setIsInviteDetailsModalOpen(true);
+                      }}
+                      className="text-xs font-bold text-red-600 bg-red-50 hover:bg-red-100 px-3 py-2 rounded-lg transition-colors"
+                    >
+                      🗑 Delete
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+            {invites.length === 0 && !loading && (
+              <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-8 text-center">
+                <p className="text-slate-400 font-medium mb-3">
+                  {inviteFilter === "pending" && "No pending invitations."}
+                  {inviteFilter === "used" && "No accepted invitations yet."}
+                  {inviteFilter === "all" && "No invitation history."}
+                </p>
+                {inviteFilter === "pending" && (
+                  <button
+                    onClick={() => setIsInviteModalOpen(true)}
+                    className="text-indigo-600 font-bold hover:underline"
+                  >
+                    Send your first invite →
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Desktop Table View */}
+          <div className="hidden sm:block bg-white rounded-3xl shadow-sm border border-slate-100 overflow-hidden">
             <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="bg-slate-50/50 border-b border-slate-100">
@@ -505,7 +644,7 @@ export default function TeamManagement() {
                     Status
                   </th>
                   <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase">
-                    Created
+                    Invite Link
                   </th>
                   <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase text-right">
                     Actions
@@ -566,8 +705,20 @@ export default function TeamManagement() {
                         </span>
                       </td>
                       <td className="px-6 py-4">{getStatusBadge()}</td>
-                      <td className="px-6 py-4 text-xs text-slate-500">
-                        {new Date(i.createdAt).toLocaleDateString()}
+                      <td className="px-6 py-4">
+                        {i.inviteLink && i.status !== "USED" && !i.isExpired ? (
+                          <button
+                            onClick={() =>
+                              copyInviteLinkFromTable(i.inviteLink, i.email)
+                            }
+                            className="text-xs font-bold text-indigo-600 hover:text-indigo-800 bg-indigo-50 hover:bg-indigo-100 px-3 py-1.5 rounded-lg transition-colors"
+                            title={i.inviteLink}
+                          >
+                            📋 Copy Link
+                          </button>
+                        ) : (
+                          <span className="text-xs text-slate-400">—</span>
+                        )}
                       </td>
                       <td className="px-6 py-4 text-right space-x-2">
                         <button
