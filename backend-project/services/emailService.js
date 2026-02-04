@@ -11,7 +11,7 @@ class EmailService {
     }
 
     const emailAddress = process.env.EMAIL_FROM || 'onboarding@resend.dev';
-    this.from = `GearStock <${emailAddress}>`;
+    this.from = `"GearStock" <${emailAddress}>`;
     this.appUrl = process.env.APP_PUBLIC_URL || 'http://localhost:5173';
   }
 
