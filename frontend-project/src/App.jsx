@@ -16,6 +16,8 @@ import WorkOrders from "./components/WorkOrders";
 import ReportsPage from "./components/ReportsPage";
 import TeamManagement from "./components/TeamManagement";
 import Layout from "./components/Layout";
+import PrivacyPolicy from "./components/PrivacyPolicy";
+import TermsOfService from "./components/TermsOfService";
 import { API_BASE_URL } from "./config";
 
 export const AuthContext = React.createContext();
@@ -90,7 +92,6 @@ function App() {
   };
 
   const logout = () => {
-    
     localStorage.removeItem("token");
     localStorage.removeItem("user");
     localStorage.removeItem("memberships");
@@ -155,6 +156,8 @@ function App() {
           <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/reset-password/:token" element={<ResetPassword />} />
           <Route path="/invite/:token" element={<InviteAccept />} />
+          <Route path="/privacy" element={<PrivacyPolicy />} />
+          <Route path="/terms" element={<TermsOfService />} />
           <Route path="*" element={<Navigate to="/login" />} />
         </Routes>
       ) : (

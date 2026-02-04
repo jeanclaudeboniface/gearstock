@@ -1,5 +1,5 @@
-import React from 'react';
-import { Link } from 'react-router-dom';
+import React from "react";
+import { Link } from "react-router-dom";
 
 export default function LandingFinalCTA() {
   return (
@@ -13,13 +13,20 @@ export default function LandingFinalCTA() {
           Ready to take full control of your garage?
         </h2>
         <p className="text-blue-100 text-xl mb-12 max-w-2xl mx-auto">
-          Join the garages that have ditched the paper notebooks for a more professional, accountable, and organized operation.
+          Join the garages that have ditched the paper notebooks for a more
+          professional, accountable, and organized operation.
         </p>
         <div className="flex flex-col sm:flex-row items-center justify-center space-y-4 sm:space-y-0 sm:space-x-4">
-          <Link to="/login" className="w-full sm:w-auto bg-white text-blue-600 px-10 py-5 rounded-2xl font-bold text-xl hover:bg-blue-50 transition-all shadow-xl transform hover:scale-105">
+          <Link
+            to="/signup"
+            className="w-full sm:w-auto bg-white text-blue-600 px-10 py-5 rounded-2xl font-bold text-xl hover:bg-blue-50 transition-all shadow-xl transform hover:scale-105"
+          >
             Create Your Garage Account
           </Link>
-          <a href="#" className="w-full sm:w-auto bg-blue-700 text-white border border-blue-500 px-10 py-5 rounded-2xl font-bold text-xl hover:bg-blue-800 transition-all">
+          <a
+            href="mailto:sales@gearstock.app"
+            className="w-full sm:w-auto bg-blue-700 text-white border border-blue-500 px-10 py-5 rounded-2xl font-bold text-xl hover:bg-blue-800 transition-all"
+          >
             Talk to Sales
           </a>
         </div>
